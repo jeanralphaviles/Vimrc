@@ -9,18 +9,23 @@ set fenc=utf-8
 set termencoding=utf-8
 
 " Misc Settings
-set undolevels=1000  " set number of undo levels
-set history=1000     " mucho levels of history
-set autoread         " Set to auto read when a file is changed from the outside
-set showcmd          " show command in bottom bar
-set ruler            " always display status line
-set laststatus=2     " always display status line
-set mouse=a          " allow use of the mouse
-set nobackup         " this is not the 70's we don't need backups
-set noswapfile       " disable swap files
+set undolevels=10000  " set number of undo levels
+set history=10000     " mucho levels of history
+set autoread          " Set to auto read when a file is changed from the outside
+set showcmd           " show command in bottom bar
+set ruler             " always display status line
+set laststatus=2      " always display status line
+set mouse=a           " allow use of the mouse
+set nobackup          " this is not the 70's we don't need backups
+set noswapfile        " disable swap files
 set viewoptions=folds,options,cursor,unix,slash " Better compatibility
 " use semicolon as another colon
 noremap ; :
+" ignore typos
+command WQ wq
+command Wq wq
+command W w
+command Q q
 
 " configure tabwidth and insert spaces instead of tabs and indentation
 set tabstop=2        " tab width is 2 spaces
@@ -39,10 +44,11 @@ highlight LineNr ctermfg=grey
 set cursorline
 highlight CursorLine term=bold cterm=bold guibg=Grey40
 " 80 column limit
-set colorcolumn=81 " Highlight column 81
-highlight ColorColumn ctermbg=Black guibg=#2c2d27
 highlight OverLength ctermbg=red ctermfg=white guibg=#592929
-match OverLength /\%81v.\+/
+call matchadd('OverLength', '\%81v', 100)
+" Highlight tabs, trailing whitespace, and non-breaking spaces
+exec "set listchars=tab:\uBB\uBB,trail:\uB7,nbsp:~"
+set list
 
 " Searching
 set hlsearch         " highlight when searching
@@ -51,6 +57,27 @@ set ignorecase       " case insensitive search
 set smartcase        " smart case search
 " space to clear search highlights
 nnoremap <silent> <Space> :nohlsearch<Bar>:echo<CR>
+" Better search match visualization
+function! HLNext (blinktime)
+    highlight BlackOnBlack ctermfg=black ctermbg=black
+    let [bufnum, lnum, col, off] = getpos('.')
+    let matchlen = strlen(matchstr(strpart(getline('.'),col-1),@/))
+    let hide_pat = '\%<'.lnum.'l.'
+            \ . '\|'
+            \ . '\%'.lnum.'l\%<'.col.'v.'
+            \ . '\|'
+            \ . '\%'.lnum.'l\%>'.(col+matchlen-1).'v.'
+            \ . '\|'
+            \ . '\%>'.lnum.'l.'
+    let ring = matchadd('BlackOnBlack', hide_pat, 101)
+    redraw
+    exec 'sleep ' . float2nr(a:blinktime * 1000) . 'm'
+    call matchdelete(ring)
+    redraw
+endfunction
+" This rewires n and N to do the highlighing...
+nnoremap <silent> n   n:call HLNext(0.4)<cr>
+nnoremap <silent> N   N:call HLNext(0.4)<cr>
 
 " highlighting
 syntax on            " turn syntax highlighting on
@@ -73,9 +100,9 @@ map <leader>ss :setlocal spell!<cr>
 set viminfo^=%       " Remember info about open buffers on close
 " Return to last edit position when opening files (You want this!)
 autocmd BufReadPost *
-    \ if line("'\"") > 0 && line("'\"") <= line("$") |
-    \   exe "normal! g`\"" |
-    \ endif
+\ if line("'\"") > 0 && line("'\"") <= line("$") |
+  \   exe "normal! g`\"" |
+\ endif
 
 " You will not use the arrow keys
 nnoremap <Left> :tabnew NOARROWKEYS<CR>
